@@ -1,84 +1,166 @@
-const üstEkran = document.querySelector(".previous-display");
+//* ======================================================
+//*                     IOS CALCULATOR
+//* ======================================================
+
+const numberButtons = document.querySelectorAll(".num");
+const operationButtons = document.querySelectorAll(".operator");
+const equalButtons = document.querySelector(".equal");
+const acButtons = document.querySelector(".ac");
+const pmButtons = document.querySelector(".pm");
+const percentButtons = document.querySelector(".percent");
+const ustEkran = document.querySelector(".previous-display");
 const altEkran = document.querySelector(".current-display");
-let num1 = 0;
-let num2 = 0;
+
+//?operator değişkenleri
+let ustEkranYazi = "";
+let altEkranYazi = "";
 let islem = "";
-let sonuc = 0;
+let esittirVeyaPercentPressed = false;
 
-/// sayiyi ekrana yazdirma
+//!target kullanmak calculator da bug a sebep oluyor. o da şu ki mesela 7 ye bastığımızda hep 7 ye basılabiliyor, 8 e geçilmiyor
+// document.querySelector(".num").onclick=(number)=>{
+//  altEkranYazi+=number.target.textContent
+// altEkran.textContent=altEkranYazi
 
-document.querySelectorAll(".num").forEach((i) => {
-  i.onclick = () => {
-    if (num2 == 0) {
-      num2 = i.textContent;
-    } else {
-      num2 += i.textContent;
-      sonuc = num2;
-    }
+// }
 
-    num2 = Number(num2);
-    altEkran.textContent = num2;
-
-    document.querySelectorAll(".operator").forEach((a) => {
-      a.onclick = () => {
-        a = a.textContent;
-        islem = a;
-        // console.log(islem,"26.satir");
-        if (sonuc == 0) {
-          sonuc = num2;
-          üstEkran.textContent = sonuc + a;
-          altEkran.textContent = "";
-          num2 = 0;
-          num1 = 0;
-        } else {
-        //   console.log("else");
-          sonuc = hesapla(sonuc, islem, num2);
-        //   console.log(sonuc, islem, num2, "sonuc");
-          üstEkran.textContent = sonuc + a;
-          altEkran.textContent = "";
-          num1 = 0;
-          num2 = 0;
-        }
-      };
-    });
+numberButtons.forEach((number) => {
+  number.onclick = () => {
+    //!ekrana hazırlık, bütün bug ları kontrol fonksiyonu
+    ekranaHazirlik(number.textContent);
+    //!ekrana bastır
+    updateEkran();
   };
 });
 
-// document.querySelector(".equal").onclick = () => {
-//   altEkran.textContent = hesapla(num1, islem, num2);
-//   üstEkran.textContent = "";
-//   num2 = hesapla(num1, islem, num2);
-//   num1 = 0;
-// };
-
-document.querySelector(".ac").onclick = () => {
-  num1 == 0;
-  num2 == 0;
-  altEkran.textContent = 0;
-  üstEkran.textContent = "";
-  islem = "";
-  sonuc = 0;
-};
-
-// // hesap yapma
-
-const hesapla = (num1, islem, num2) => {
-    console.log(islem);
-  if (islem == "+") {
-      console.log(islem,"+");
-    sonuc = num1 + num2;
-  } else if (islem == "-") {
-      console.log(islem,"-");
-    sonuc = num1 - num2;
-  } else if (islem == "x") {
-      console.log(islem,"x");
-    sonuc = num1 * num2;
-  } else if (islem == "÷") {
-    console.log(islem,"/");
-    // if (num2 != 0) {
-      sonuc = num1 / num2;
-   // }
+const ekranaHazirlik = (num) => {
+  //?ekranda = 0 varken, kullanıcı 0 veya . giremesin, bunların dışında bişey girerse o görünsün
+  if (num != "0" && num != "." && altEkranYazi == "0") {
+    altEkranYazi = num;
+    //! 0 girersen üstüne sayı girersen o görünsün, yani 0 girdiğimde boş dön, bu return ü yazmazsak ve 0 a basarsak 0 dan eli boş dönmüyor, 0 ve . dışında bir sayıya bastığımızda onu 2 kere yazdırıyor, bir sefer 0 için 1 sefer sayının kendi için, çünkü biz ekranda 0 ve . dışındaki girişler görünsün ama basılmasın demedik, basılmasın komutunu return yaptı
+    return;
   }
 
-  return sonuc;
+  //?ekran boşken . girilmesin
+  if (num === "." && altEkranYazi == "") return;
+
+  //?kullanıcı herhangi bir yerde . girmişken , tekrar . girmeye kalkarsa girilmesin
+
+  if (num === "." && altEkranYazi.includes(".")) return;
+
+  //?kullanıcı ilk başta 0 girer ardından tekrar 0 girerse, girilmesin ekranda 1 tane 0 görünsün
+
+  if (num === "0" && altEkranYazi === "0") return;
+
+  //*eşittire basılınca if içi true olur ve altEkranda sadece o an girilen sayı gözükür, sonrasında işleme normal devam etmek istediğim için, fabrika ayarlarına geri döndüm, yani esittirVeyaPercentPressed değişkenini false yaptım ki bu if e giremesin
+  if (esittirVeyaPercentPressed) {
+    esittirVeyaPercentPressed = false;
+    altEkranYazi = num;
+    //!çok fazla if varsa, oralardan veri gelebilir hata alırım, tek benim dediğimi yap farklı bişey varsa boş dön return diyoruz
+    return;
+  }
+
+  //?bütün şartları başarıyla geçtikten sonra, basılan numaraları ardarda ekranda göster
+  altEkranYazi = altEkranYazi + num;
+};
+
+//? javascriptt te yapılanlar ekrana DOM a bastırılacak
+
+const updateEkran = () => {
+  //!ekranda 9 basamaktan fazlası görünmesin
+  //*toString() eklememin nedeni 4 işlemden sonra altEkranYazi number a dönüşür, ve stringlerde geçerli slice metodu çalışmaz, bu yüzden tekrar string e çevirdik
+
+  if (altEkranYazi.toString().length > 9) {
+    altEkranYazi = altEkranYazi.toString().slice(0, 9);
+  }
+
+  altEkran.textContent = altEkranYazi;
+  //?işlem null dışında ne girilirse (+,- ,"") alttaki çalışsın
+  if (islem != null) {
+    ustEkran.textContent = `${ustEkranYazi} ${islem}`; //backtick ekrana kolay ve boşluklu basmamıza yaradı, şart değil
+  }
+};
+
+operationButtons.forEach((op) => {
+  op.onclick = () => {
+    //?herhangi bir işleme basıldıktan sonra (ustEkran dolu altEkran boşken), işlemi değiştirmek istersek
+    if (ustEkranYazi && altEkranYazi == "") {
+      islem = op.textContent;
+      updateEkran();
+    }
+
+    //?ekran boşken işleme basılmasın
+    if (altEkranYazi === "") return;
+
+    //? eşittire basılmadan arka arkaya işleme basılırsa (altEkran ve UstEkran doluyken işleme basılırsa)
+    if (altEkranYazi && ustEkranYazi) {
+      hesapla();
+    }
+
+    islem = op.textContent;
+    ustEkranYazi = altEkranYazi;
+    altEkranYazi = "";
+    updateEkran();
+  };
+});
+
+equalButtons.onclick = () => {
+  hesapla();
+  updateEkran();
+  esittirVeyaPercentPressed = true;
+};
+
+const hesapla = () => {
+  let sonuc;
+  switch (islem) {
+    case "+":
+      sonuc = +ustEkranYazi + Number(altEkranYazi);
+      break;
+
+    case "-":
+      sonuc = ustEkranYazi - altEkranYazi;
+      break;
+
+    case "x":
+      sonuc = ustEkranYazi * altEkranYazi;
+      break;
+
+    case "÷":
+      sonuc = ustEkranYazi / altEkranYazi;
+      break;
+
+    default:
+      break;
+  }
+  altEkranYazi = sonuc;
+  ustEkranYazi = "";
+  islem = "";
+};
+
+//?AC butonuna basıldığında
+
+acButtons.addEventListener("click", () => {
+  islem = "";
+  altEkranYazi = "";
+  ustEkranYazi = "";
+  updateEkran();
+});
+
+//? PM butonuna basıldığında
+
+pmButtons.onclick = () => {
+  //*ekran boşken pm butonu çalışmasın, yoksa ekran boşken pm e basıldığında updateEkran yüzünden, ekranda 0 baslıyor
+  if (!altEkranYazi) return;
+
+  altEkranYazi = altEkranYazi * -1;
+  updateEkran();
+};
+
+percentButtons.onclick = () => {
+  if (!altEkranYazi) return;
+
+  altEkranYazi = altEkranYazi / 100;
+
+  updateEkran();
+  esittirVeyaPercentPressed = true;
 };
